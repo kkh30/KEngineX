@@ -8,8 +8,9 @@
 #include <iostream>
 #include <vector>
 #include <assert.h>
+#include <IAPI.h>
+#include <stdint.h>
 
-#define USE_VALIDATION_LAYERS
 
 /** Macro to get a procedure address based on a Vulkan instance. */
 #define GET_INSTANCE_PROC_ADDR(instance, name) \
@@ -20,26 +21,40 @@
 	vk##name = reinterpret_cast<PFN_vk##name>(vkGetDeviceProcAddr(device, "vk"#name));
 
 namespace ke {
-	class VulkanAPI
-	{
-	public:
-		VulkanAPI();
-		~VulkanAPI();
 
-	private:
-		VkInstance m_instance = VK_NULL_HANDLE;
-		VkDebugReportCallbackEXT m_debug_callback;
+	namespace renderer {
 
+		class VulkanAPI : public IAPI
+		{
+		public:
+			~VulkanAPI();
+			static VulkanAPI& GetVulkanAPI() {
+				static VulkanAPI l_api;
+				return l_api;
+			};
 
-	};
-	extern PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR;
-	extern PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR;
-	extern PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR;
-	extern PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR;
+		private:
+			VulkanAPI();
+			VkInstance m_instance = VK_NULL_HANDLE;
+			VkDebugReportCallbackEXT m_debug_callback;
+			// Inherited via IAPI
+			virtual void Init(bool enable_validation = false) override;
+			VkAllocationCallbacks* gVulkanAllocator = nullptr;
+			PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT = nullptr;
+			PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT = nullptr;
+			PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR = nullptr;
+			PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR = nullptr;
+			PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR = nullptr;
+			PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR = nullptr;
+			PFN_vkCreateSwapchainKHR vkCreateSwapchainKHR = nullptr;
+			PFN_vkDestroySwapchainKHR vkDestroySwapchainKHR = nullptr;
+			PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR = nullptr;
+			PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR = nullptr;
+			PFN_vkQueuePresentKHR vkQueuePresentKHR = nullptr;
 
-	extern PFN_vkCreateSwapchainKHR vkCreateSwapchainKHR;
-	extern PFN_vkDestroySwapchainKHR vkDestroySwapchainKHR;
-	extern PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR;
-	extern PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR;
-	extern PFN_vkQueuePresentKHR vkQueuePresentKHR;
+		};
+		
+	}
+
+	
 }

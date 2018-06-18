@@ -1,8 +1,8 @@
 
-#include <VulkanRenderer/VulkanAPI.h>
-
+#include <VulkanRenderer/VulkanRenderer.h>
 
 int main() {
-	auto renderer = ke::VulkanAPI();
+	auto& renderer = ke::renderer::VulkanRenderer();
+	renderer.Init();
 	return 0;
 }
