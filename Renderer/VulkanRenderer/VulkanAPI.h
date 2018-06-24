@@ -10,6 +10,40 @@
 #include <assert.h>
 #include <IAPI.h>
 #include <stdint.h>
+#include <config.h>
+#include "misc/buffer_create_info.h"
+#include "misc/framebuffer_create_info.h"
+#include "misc/glsl_to_spirv.h"
+#include "misc/graphics_pipeline_create_info.h"
+#include "misc/image_create_info.h"
+#include "misc/image_view_create_info.h"
+#include "misc/io.h"
+#include "misc/memory_allocator.h"
+#include "misc/object_tracker.h"
+#include "misc/render_pass_create_info.h"
+#include "misc/semaphore_create_info.h"
+#include "misc/swapchain_create_info.h"
+#include "misc/time.h"
+#include "misc/window_factory.h"
+#include "wrappers/buffer.h"
+#include "wrappers/command_buffer.h"
+#include "wrappers/command_pool.h"
+#include "wrappers/descriptor_set_group.h"
+#include "wrappers/descriptor_set_layout.h"
+#include "wrappers/device.h"
+#include "wrappers/event.h"
+#include "wrappers/graphics_pipeline_manager.h"
+#include "wrappers/framebuffer.h"
+#include "wrappers/image.h"
+#include "wrappers/image_view.h"
+#include "wrappers/instance.h"
+#include "wrappers/physical_device.h"
+#include "wrappers/query_pool.h"
+#include "wrappers/rendering_surface.h"
+#include "wrappers/render_pass.h"
+#include "wrappers/semaphore.h"
+#include "wrappers/shader_module.h"
+#include "wrappers/swapchain.h"
 
 
 /** Macro to get a procedure address based on a Vulkan instance. */
@@ -34,9 +68,23 @@ namespace ke {
 			};
 
 		private:
+
+			void init_vulkan();
+			void init_window();
+			void init_swapchain();
+
+		private:
 			VulkanAPI();
-			VkInstance m_instance = VK_NULL_HANDLE;
+			Anvil::InstanceUniquePtr         m_instance_ptr;
+			Anvil::SGPUDeviceUniquePtr       m_device_ptr;
+			const Anvil::PhysicalDevice*     m_physical_device_ptr;
+			Anvil::WindowUniquePtr           m_window_ptr;
+			Anvil::RenderingSurfaceUniquePtr m_rendering_surface_ptr;
+			Anvil::SwapchainUniquePtr        m_swapchain_ptr;
 			VkDebugReportCallbackEXT m_debug_callback;
+			const uint32_t m_n_swapchain_images = 3;
+			Anvil::Queue*                    m_present_queue_ptr;
+
 			// Inherited via IAPI
 			virtual void Init(bool enable_validation = false) override;
 			VkAllocationCallbacks* gVulkanAllocator = nullptr;
@@ -51,7 +99,9 @@ namespace ke {
 			PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR = nullptr;
 			PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR = nullptr;
 			PFN_vkQueuePresentKHR vkQueuePresentKHR = nullptr;
-
+			bool m_enable_validation = false;
+			VkBool32 debugMsgCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t srcObject,
+				size_t location, int32_t msgCode, const char* pLayerPrefix, const char* pMsg, void* pUserData);
 		};
 		
 	}

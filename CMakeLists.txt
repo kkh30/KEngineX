@@ -10,11 +10,11 @@ if (NOT Vulkan_FOUND)
     message(FATAL_ERROR "Vulkan Not Found!")
 endif (NOT Vulkan_FOUND)
 
-include_directories(${Vulkan_INCLUDE_DIRS})
+link_directories("C:\\VulkanSDK\\1.1.73.0\\Lib")
 include_directories(${PROJECT_SOURCE_DIR}/Framework)
 include_directories(${PROJECT_SOURCE_DIR}/Game)
 include_directories(${PROJECT_SOURCE_DIR}/Renderer)
 
 add_subdirectory(Framework)
-add_subdirectory(Game)
 add_subdirectory(Renderer)
+add_subdirectory(Game)
