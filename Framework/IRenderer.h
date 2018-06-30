@@ -1,8 +1,17 @@
 #pragma once
 #include "INoCopy.h"
+#include "IModule.h"
 namespace ke {
 	namespace renderer {
-		class IRenderer : public INoCopy
+
+        
+
+        enum RendererAPI
+        {
+            DirextX,OGL,GLES,Vulkan
+        };
+
+		class IRenderer : public INoCopy,public IModule
 
 		{
 		public:

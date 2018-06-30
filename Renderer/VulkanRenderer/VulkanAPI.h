@@ -58,35 +58,32 @@ namespace ke {
 
 	namespace renderer {
 
-		class VulkanAPI : public IAPI
+		class VulkanAPI final : public IAPI
 		{
 		public:
 			~VulkanAPI();
-			static VulkanAPI& GetVulkanAPI() {
-				static VulkanAPI l_api;
-				return l_api;
-			};
+            VulkanAPI();
+
 
 		private:
-
-			void init_vulkan();
-			void init_window();
-			void init_swapchain();
+			void init_instance_device();
 
 		private:
-			VulkanAPI();
-			Anvil::InstanceUniquePtr         m_instance_ptr;
-			Anvil::SGPUDeviceUniquePtr       m_device_ptr;
-			const Anvil::PhysicalDevice*     m_physical_device_ptr;
-			Anvil::WindowUniquePtr           m_window_ptr;
-			Anvil::RenderingSurfaceUniquePtr m_rendering_surface_ptr;
-			Anvil::SwapchainUniquePtr        m_swapchain_ptr;
-			VkDebugReportCallbackEXT m_debug_callback;
-			const uint32_t m_n_swapchain_images = 3;
-			Anvil::Queue*                    m_present_queue_ptr;
+			
 
 			// Inherited via IAPI
 			virtual void Init(bool enable_validation = false) override;
+
+        public:
+            // Anvil
+            Anvil::InstanceUniquePtr         m_instance_ptr;
+            Anvil::SGPUDeviceUniquePtr       m_device_ptr;
+            const Anvil::PhysicalDevice*     m_physical_device_ptr;
+           
+            VkDebugReportCallbackEXT m_debug_callback;
+
+        private:
+            // Vulkan
 			VkAllocationCallbacks* gVulkanAllocator = nullptr;
 			PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT = nullptr;
 			PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT = nullptr;
