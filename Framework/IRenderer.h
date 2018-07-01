@@ -1,6 +1,7 @@
 #pragma once
 #include "INoCopy.h"
 #include "IModule.h"
+#include "FrameGraph.h"
 namespace ke {
 	namespace renderer {
 
@@ -23,10 +24,10 @@ namespace ke {
 			{
 			}
 
-			
+
+            __forceinline virtual FrameGraph* GetFrameGraph() = 0;
 
 		protected:
-
 		};
 
 		

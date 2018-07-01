@@ -14,7 +14,8 @@ namespace ke {
 		//No Copy
 		INoCopy(const INoCopy&) = delete;
 		INoCopy& operator=(const INoCopy&) = delete;
-
+        INoCopy(INoCopy&&) = delete;
+        INoCopy& operator=(INoCopy&&) = delete;
 	private:
 
 	};

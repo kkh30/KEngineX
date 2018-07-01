@@ -3,6 +3,7 @@
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif // _WIN32
 
+#include <INoCopy.h>
 #include <vulkan/vulkan.h>
 #include "vk_mem_alloc.h"
 #include <iostream>
@@ -58,48 +59,64 @@ namespace ke {
 
 	namespace renderer {
 
-		class VulkanAPI final : public IAPI
-		{
-		public:
-			~VulkanAPI();
-            VulkanAPI();
+        namespace vkrenderer 
+        {
+            class VulkanAPI final : public IAPI
+            {
+            public:
 
+                static VulkanAPI& GetVulkanAPI() {
+                    return *GetVulkanAPIPtr();
+                }
 
-		private:
-			void init_instance_device();
+                static VulkanAPI* GetVulkanAPIPtr()
+                {
+                    static VulkanAPI l_api;
+                    return &l_api;
+                }
 
-		private:
-			
+                ~VulkanAPI();
 
-			// Inherited via IAPI
-			virtual void Init(bool enable_validation = false) override;
+            private:
 
-        public:
-            // Anvil
-            Anvil::InstanceUniquePtr         m_instance_ptr;
-            Anvil::SGPUDeviceUniquePtr       m_device_ptr;
-            const Anvil::PhysicalDevice*     m_physical_device_ptr;
-           
-            VkDebugReportCallbackEXT m_debug_callback;
+                void init_instance_device();
+                
+                VulkanAPI();
 
-        private:
-            // Vulkan
-			VkAllocationCallbacks* gVulkanAllocator = nullptr;
-			PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT = nullptr;
-			PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT = nullptr;
-			PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR = nullptr;
-			PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR = nullptr;
-			PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR = nullptr;
-			PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR = nullptr;
-			PFN_vkCreateSwapchainKHR vkCreateSwapchainKHR = nullptr;
-			PFN_vkDestroySwapchainKHR vkDestroySwapchainKHR = nullptr;
-			PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR = nullptr;
-			PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR = nullptr;
-			PFN_vkQueuePresentKHR vkQueuePresentKHR = nullptr;
-			bool m_enable_validation = false;
-			VkBool32 debugMsgCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t srcObject,
-				size_t location, int32_t msgCode, const char* pLayerPrefix, const char* pMsg, void* pUserData);
-		};
+            private:
+                
+                // Inherited via IAPI
+                virtual void Init(bool enable_validation = false) override;
+
+            public:
+                // Anvil
+                Anvil::InstanceUniquePtr         m_instance_ptr;
+                Anvil::SGPUDeviceUniquePtr       m_device_ptr;
+                const Anvil::PhysicalDevice*     m_physical_device_ptr;
+                VmaAllocator*    m_vma_allocator;
+                VkDebugReportCallbackEXT m_debug_callback;
+
+            private:
+                // Vulkan
+                VkAllocationCallbacks * gVulkanAllocator = nullptr;
+                PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT = nullptr;
+                PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT = nullptr;
+                PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR = nullptr;
+                PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR = nullptr;
+                PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR = nullptr;
+                PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR = nullptr;
+                PFN_vkCreateSwapchainKHR vkCreateSwapchainKHR = nullptr;
+                PFN_vkDestroySwapchainKHR vkDestroySwapchainKHR = nullptr;
+                PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR = nullptr;
+                PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR = nullptr;
+                PFN_vkQueuePresentKHR vkQueuePresentKHR = nullptr;
+                bool m_enable_validation = false;
+                VkBool32 debugMsgCallback(VkDebugReportFlagsEXT flags, VkDebugReportObjectTypeEXT objType, uint64_t srcObject,
+                    size_t location, int32_t msgCode, const char* pLayerPrefix, const char* pMsg, void* pUserData);
+            };
+
+        }
+
 		
 	}
 

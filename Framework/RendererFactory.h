@@ -32,7 +32,7 @@ namespace ke
                     return nullptr;
                     break;
                 case ke::renderer::Vulkan:
-                    return std::make_unique<VulkanRenderer>();
+                    return std::make_unique<vkrenderer::VulkanRenderer>();
                     break;
                 default:
                     return nullptr;
