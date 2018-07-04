@@ -2,6 +2,7 @@
 #include "Factory.h"
 #include "IRenderer.h"
 #include <VulkanRenderer/VulkanRenderer.h>
+#include <DX12Renderer/DX12Renderer.h>
 #include <EngineConstant.h>
 namespace ke
 {
@@ -26,14 +27,13 @@ namespace ke
                 switch (p_api)
                 {
                 case ke::renderer::DirextX:
+                    return std::make_unique<dx12renderer::DX12Renderer>();
                 case ke::renderer::OGL:
                 case ke::renderer::GLES:
                     _ASSERT(0);
                     return nullptr;
-                    break;
                 case ke::renderer::Vulkan:
                     return std::make_unique<vkrenderer::VulkanRenderer>();
-                    break;
                 default:
                     return nullptr;
                     break;

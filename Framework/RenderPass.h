@@ -22,7 +22,7 @@ namespace ke
             {
                 m_inputs.push_back(p_resource);
             }
-            __forceinline void SetInput(SharedPtr<FrameResource> p_resource)
+            __forceinline void SetTarget(SharedPtr<FrameResource> p_resource)
             {
                 m_target = p_resource;
             }

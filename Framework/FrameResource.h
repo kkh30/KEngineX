@@ -12,7 +12,7 @@ namespace ke
             FrameResource()
             {
             }
-            ~FrameResource()
+            virtual ~FrameResource()
             {
             }
 
