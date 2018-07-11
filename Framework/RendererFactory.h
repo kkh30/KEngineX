@@ -27,7 +27,8 @@ namespace ke
                 switch (p_api)
                 {
                 case ke::renderer::DirextX:
-                    return std::make_unique<dx12renderer::DX12Renderer>();
+                    m_current_renderer = std::make_unique<dx12renderer::DX12Renderer>();
+                    return std::forward<UniquePtr<IRenderer>>(m_current_renderer);
                 case ke::renderer::OGL:
                 case ke::renderer::GLES:
                     _ASSERT(0);
@@ -43,9 +44,8 @@ namespace ke
         private:
             RendererFactory()
             {
-
             };
-
+            UniquePtr<IRenderer> m_current_renderer;
         };
         
     }
