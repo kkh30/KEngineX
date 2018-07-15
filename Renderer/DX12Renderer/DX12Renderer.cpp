@@ -15,7 +15,8 @@ namespace ke
                 m_useWarpDevice(false),
                 m_frameIndex(0),
                 m_rtvDescriptorSize(0),
-                m_fenceEvent(nullptr)
+                m_fenceEvent(nullptr),
+                m_fenceValue()
             {
             }
             
@@ -26,8 +27,6 @@ namespace ke
                 InitDescHeap();
 
                 InitFramebuffer();
-
-                InitCmdAllocator();
 
                 InitCmdList();
 
@@ -180,18 +179,25 @@ namespace ke
 
             void DX12Renderer::InitCmdList()
             {
-                // Create the command list.
-                m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator.Get(), nullptr, IID_PPV_ARGS(&m_commandList));
 
-                // Command lists are created in the recording state, but there is nothing
-                // to record yet. The main loop expects it to be closed, so close it now.
-                m_commandList->Close();
+                for (auto i = 0; i < SWAP_CHAIN_COUNT; ++i)
+                {
+                    m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator[i]));
+                    // Create the command list.
+                    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE_DIRECT, m_commandAllocator[i].Get(), nullptr, IID_PPV_ARGS(&m_commandList[i]));
+
+                    // Command lists are created in the recording state, but there is nothing
+                    // to record yet. The main loop expects it to be closed, so close it now.
+                    m_commandList[i]->Close();
+                }
+                
             }
 
             void DX12Renderer::InitSynchronization()
             {
-                m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence));
-                m_fenceValue = 1;
+                m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fences[0]));
+                m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fences[1]));
+                m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fences[2]));
 
                 // Create an event handle to use for frame synchronization.
                 m_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
@@ -203,24 +209,19 @@ namespace ke
 
             void DX12Renderer::WaitForPreviousFrame()
             {
-                // WAITING FOR THE FRAME TO COMPLETE BEFORE CONTINUING IS NOT BEST PRACTICE.
-                // This is code implemented as such for simplicity. The D3D12HelloFrameBuffering
-                // sample illustrates how to use fences for efficient resource usage and to
-                // maximize GPU utilization.
+                //shcedule a fence in command queue,based on the frame that
+                //rendering is working on.
+                m_commandQueue->Signal(m_fences[m_frameIndex].Get(), m_fenceValue[m_frameIndex]);
+                m_fenceValue[m_frameIndex] = m_current_value++;
+                m_frameIndex = (m_frameIndex + 1) % 3;
 
-                // Signal and increment the fence value.
-                const UINT64 fence = m_fenceValue;
-                m_commandQueue->Signal(m_fence.Get(), fence);
-                m_fenceValue++;
-
-                // Wait until the previous frame is finished.
-                if (m_fence->GetCompletedValue() < fence)
+                const auto current_swapchain_index = m_swapChain->GetCurrentBackBufferIndex();
+                if (m_fences[current_swapchain_index]->GetCompletedValue() < m_fenceValue[current_swapchain_index]) 
                 {
-                    m_fence->SetEventOnCompletion(fence, m_fenceEvent);
-                    WaitForSingleObject(m_fenceEvent, INFINITE);
+                    m_fences[current_swapchain_index]->SetEventOnCompletion(m_fenceValue[current_swapchain_index], m_fenceEvent);
+                    WaitForSingleObjectEx(m_fenceEvent, INFINITY, false);
                 }
 
-                m_frameIndex = m_swapChain->GetCurrentBackBufferIndex();
             }
 
             void DX12Renderer::RecordCmdList()
@@ -228,26 +229,26 @@ namespace ke
                 // Command list allocators can only be reset when the associated 
                 // command lists have finished execution on the GPU; apps should use 
                 // fences to determine GPU execution progress.
-                m_commandAllocator->Reset();
+                m_commandAllocator[m_frameIndex]->Reset();
 
                 // However, when ExecuteCommandList() is called on a particular command 
                 // list, that command list can then be reset at any time and must be before 
                 // re-recording.
-                m_commandList->Reset(m_commandAllocator.Get(),nullptr);
+                m_commandList[m_frameIndex]->Reset(m_commandAllocator[m_frameIndex].Get(),nullptr);
 
                 // Indicate that the back buffer will be used as a render target.
-                m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
+                m_commandList[m_frameIndex]->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_PRESENT, D3D12_RESOURCE_STATE_RENDER_TARGET));
 
                 CD3DX12_CPU_DESCRIPTOR_HANDLE rtvHandle(m_rtvHeap->GetCPUDescriptorHandleForHeapStart(), m_frameIndex, m_rtvDescriptorSize);
 
                 // Record commands.
                 const float clearColor[] = { 0.0f, 0.2f, 0.4f, 1.0f };
-                m_commandList->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
+                m_commandList[m_frameIndex]->ClearRenderTargetView(rtvHandle, clearColor, 0, nullptr);
 
                 // Indicate that the back buffer will now be used to present.
-                m_commandList->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
+                m_commandList[m_frameIndex]->ResourceBarrier(1, &CD3DX12_RESOURCE_BARRIER::Transition(m_renderTargets[m_frameIndex].Get(), D3D12_RESOURCE_STATE_RENDER_TARGET, D3D12_RESOURCE_STATE_PRESENT));
 
-                m_commandList->Close();
+                m_commandList[m_frameIndex]->Close();
             }
 
             void DX12Renderer::Render()
@@ -256,7 +257,7 @@ namespace ke
                 RecordCmdList();
 
                 // Execute the command list.
-                ID3D12CommandList* ppCommandLists[] = { m_commandList.Get() };
+                ID3D12CommandList* ppCommandLists[] = { m_commandList[m_frameIndex].Get() };
                 m_commandQueue->ExecuteCommandLists(1, ppCommandLists);
 
                 // Present the frame.
@@ -265,12 +266,7 @@ namespace ke
                 WaitForPreviousFrame();
             }
 
-            void DX12Renderer::InitCmdAllocator()
-            {
-                m_device->CreateCommandAllocator(D3D12_COMMAND_LIST_TYPE_DIRECT, IID_PPV_ARGS(&m_commandAllocator));
-
-            }
-
+          
             void DX12Renderer::GetHardwareAdapter(IDXGIFactory2 * pFactory, IDXGIAdapter1 ** ppAdapter)
             {
                 ComPtr<IDXGIAdapter1> adapter;

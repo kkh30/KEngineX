@@ -52,7 +52,6 @@ namespace ke
 
                 void Render();
 
-                __forceinline void InitCmdAllocator();
 
                 bool m_useWarpDevice = false;
 
@@ -64,19 +63,19 @@ namespace ke
                 
                 ComPtr<ID3D12Device> m_device;
 
-                ComPtr<ID3D12CommandAllocator> m_commandAllocator;
+                ComPtr<ID3D12CommandAllocator> m_commandAllocator[SWAP_CHAIN_COUNT];
                 
                 ComPtr<ID3D12DescriptorHeap> m_rtvHeap;
 
                 ComPtr<ID3D12Resource> m_renderTargets[SWAP_CHAIN_COUNT];
 
-                ComPtr<ID3D12GraphicsCommandList> m_commandList;
+                ComPtr<ID3D12GraphicsCommandList> m_commandList[SWAP_CHAIN_COUNT];
 
                 // Synchronization objects.
                 HANDLE m_fenceEvent;
-                ComPtr<ID3D12Fence> m_fence;
-                UINT64 m_fenceValue;
-
+                ComPtr<ID3D12Fence> m_fences[SWAP_CHAIN_COUNT];
+                UINT64 m_fenceValue[SWAP_CHAIN_COUNT];
+                uint64_t m_current_value = 0;
                 uint32_t m_frameIndex = 0;
 
                 uint32_t m_rtvDescriptorSize = 0;
