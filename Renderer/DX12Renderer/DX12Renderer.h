@@ -52,6 +52,7 @@ namespace ke
 
                 void Render();
 
+                void LoadScene();
 
                 bool m_useWarpDevice = false;
 
@@ -70,6 +71,17 @@ namespace ke
                 ComPtr<ID3D12Resource> m_renderTargets[SWAP_CHAIN_COUNT];
 
                 ComPtr<ID3D12GraphicsCommandList> m_commandList[SWAP_CHAIN_COUNT];
+
+                ComPtr<ID3D12RootSignature> m_rootSignature;
+
+                ComPtr<ID3D12PipelineState> m_pipelineState;
+
+                ComPtr<ID3D12Resource> m_vertexBuffer;
+
+                D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
+
+                CD3DX12_VIEWPORT m_viewport;
+                CD3DX12_RECT m_scissorRect;
 
                 // Synchronization objects.
                 HANDLE m_fenceEvent;
