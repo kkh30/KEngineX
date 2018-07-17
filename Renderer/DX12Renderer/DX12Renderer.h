@@ -1,14 +1,7 @@
 #pragma once
-#include "DX12Renderer/Win32Application.h"
-#include "d3dx12.h"
-#include <d3d12.h>
-#include <d3dcompiler.h>
-#include <dxgi.h>
-#include <dxgi1_3.h>
-#include <dxgi1_4.h>
+#include "DX12API.h"
 #include <IRenderer.h>
 #include <FrameGraph.h>
-#include <EngineConstant.h>
 
 namespace ke
 {
@@ -16,9 +9,8 @@ namespace ke
     {
         namespace dx12renderer
         {
-            using Microsoft::WRL::ComPtr;
 
-            class DX12Renderer final: public IRenderer,public Win32Application
+            class DX12Renderer final: public IRenderer
             {
             public:
                 DX12Renderer();
@@ -34,7 +26,7 @@ namespace ke
 
                 virtual FrameGraph * GetFrameGraph() override;
             private:
-                void InitDevice();
+                void InitAPI();
 
                 void InitSwapChain();
 
@@ -54,15 +46,8 @@ namespace ke
 
                 void LoadScene();
 
-                bool m_useWarpDevice = false;
-
                 void GetHardwareAdapter(IDXGIFactory2* pFactory, IDXGIAdapter1** ppAdapter);
-                
-                ComPtr<ID3D12CommandQueue> m_commandQueue;
 
-                ComPtr<IDXGISwapChain3> m_swapChain;
-                
-                ComPtr<ID3D12Device> m_device;
 
                 ComPtr<ID3D12CommandAllocator> m_commandAllocator[SWAP_CHAIN_COUNT];
                 
@@ -80,7 +65,14 @@ namespace ke
 
                 D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
 
+                ComPtr<ID3D12Device> m_device;
+
+                ComPtr<ID3D12CommandQueue> m_commandQueue;
+
+                ComPtr<IDXGISwapChain3> m_swapChain;
+
                 CD3DX12_VIEWPORT m_viewport;
+
                 CD3DX12_RECT m_scissorRect;
 
                 // Synchronization objects.

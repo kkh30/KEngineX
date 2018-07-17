@@ -1,5 +1,6 @@
 #pragma once
 #include "INoCopy.h"
+#include <d3d12.h>
 
 namespace ke {
 	namespace renderer {

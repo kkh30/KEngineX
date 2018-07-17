@@ -20,12 +20,21 @@
 class Win32Application
 {
 public:
-    Win32Application(std::function<void(void)>);
+
+
+    Win32Application(std::function<void(void)> = dummy_render_func);
+    
     ~Win32Application() { }
-    void MsgLoop();
+
+    void SetRenderFunc(std::function<void(void)> p_func);
+
+    void RenderWindow();
+
 protected:
 	static LRESULT CALLBACK WindowProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam);
     HWND m_hwnd;
 private:
     std::function<void(void)> m_render_func;
+    static void dummy_render_func() {};
+
 };

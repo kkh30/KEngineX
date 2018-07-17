@@ -44,9 +44,19 @@ Win32Application::Win32Application(std::function<void(void)> p_render_func):
         nullptr,		// We aren't using menus.
         APP_INSTANCE,
         nullptr);
+
+    ShowWindow(m_hwnd, CMD_SHOW);
+
+   
+
 }
 
-void Win32Application::MsgLoop()
+void Win32Application::SetRenderFunc(std::function<void(void)> p_func)
+{
+    m_render_func = p_func;
+}
+
+void Win32Application::RenderWindow()
 {
     // Main sample loop.
     MSG msg = {};
@@ -60,10 +70,6 @@ void Win32Application::MsgLoop()
             DispatchMessage(&msg);
         }
     }
-
-
-    // Return this part of the WM_QUIT message to Windows.
-    //return static_cast<char>(msg.wParam);
 }
 
 // Main message handler for the sample.
