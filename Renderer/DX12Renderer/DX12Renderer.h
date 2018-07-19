@@ -2,7 +2,7 @@
 #include "DX12API.h"
 #include <IRenderer.h>
 #include <FrameGraph.h>
-
+#include "DX12VertexBuffer.h"
 namespace ke
 {
     namespace renderer
@@ -61,7 +61,9 @@ namespace ke
 
                 ComPtr<ID3D12PipelineState> m_pipelineState;
 
-                ComPtr<ID3D12Resource> m_vertexBuffer;
+                ComPtr<ID3D12Resource> m_uploadBuffer;
+
+                VertexBuffer* m_vertex_buffer;
 
                 D3D12_VERTEX_BUFFER_VIEW m_vertexBufferView;
 

@@ -16,7 +16,8 @@ namespace ke
                 m_fenceEvent(nullptr),
                 m_fenceValue(),
                 m_viewport(0.0f, 0.0f, static_cast<float>(WINDOW_WIDTH), static_cast<float>(WINDOW_HEIGHT)),
-                m_scissorRect(0, 0, static_cast<LONG>(WINDOW_WIDTH), static_cast<LONG>(WINDOW_HEIGHT))
+                m_scissorRect(0, 0, static_cast<LONG>(WINDOW_WIDTH), static_cast<LONG>(WINDOW_HEIGHT)),
+                m_vertex_buffer(nullptr)
             {
             }
             
@@ -76,7 +77,7 @@ namespace ke
                 rtvHeapDesc.Type = D3D12_DESCRIPTOR_HEAP_TYPE_RTV;
                 rtvHeapDesc.Flags = D3D12_DESCRIPTOR_HEAP_FLAG_NONE;
                 m_device->CreateDescriptorHeap(&rtvHeapDesc, IID_PPV_ARGS(&m_rtvHeap));
-
+                
                 m_rtvDescriptorSize = m_device->GetDescriptorHandleIncrementSize(D3D12_DESCRIPTOR_HEAP_TYPE_RTV);
             }
 
@@ -271,17 +272,46 @@ namespace ke
                         &CD3DX12_RESOURCE_DESC::Buffer(vertexBufferSize),
                         D3D12_RESOURCE_STATE_GENERIC_READ,
                         nullptr,
-                        IID_PPV_ARGS(&m_vertexBuffer));
+                        IID_PPV_ARGS(&m_uploadBuffer));
 
                     // Copy the triangle data to the vertex buffer.
                     UINT8* pVertexDataBegin;
                     CD3DX12_RANGE readRange(0, 0);		// We do not intend to read from this resource on the CPU.
-                    m_vertexBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
+                    m_uploadBuffer->Map(0, &readRange, reinterpret_cast<void**>(&pVertexDataBegin));
                     memcpy(pVertexDataBegin, triangleVertices, sizeof(triangleVertices));
-                    m_vertexBuffer->Unmap(0, nullptr);
+                    m_uploadBuffer->Unmap(0, nullptr);
 
+                    m_vertex_buffer = new VertexBuffer(vertexBufferSize);
+                   
+                    m_commandList[0]->Reset(m_commandAllocator[0].Get(),nullptr);
+                    D3D12_RESOURCE_BARRIER barrier = {};
+                    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+                    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+                    barrier.Transition.pResource = m_vertex_buffer->GetResource();
+                    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
+                    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
+                    barrier.Transition.Subresource = 0;
+                    m_commandList[0]->CopyBufferRegion(m_vertex_buffer->GetResource(), 0, m_uploadBuffer.Get(), 0, vertexBufferSize);
+                    m_commandList[0]->ResourceBarrier(1, &barrier);
+                    ID3D12CommandList* lists[1] = {m_commandList[0].Get()};
+                    m_commandList[0]->Close();
+
+                    m_commandQueue->ExecuteCommandLists(1, lists);
+                    ComPtr<ID3D12Fence> l_fence;
+                    HANDLE l_fenceEvent = CreateEvent(nullptr, FALSE, FALSE, nullptr);
+
+                    m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&l_fence));
+
+                    m_commandQueue->Signal(l_fence.Get(), 1);
+
+                    while (l_fence->GetCompletedValue() != 1)
+                    {
+                        l_fence->SetEventOnCompletion(1, l_fenceEvent);
+                        WaitForSingleObjectEx(l_fenceEvent, INFINITY, false);
+                    }
+                    m_commandAllocator[0]->Reset();
                     // Initialize the vertex buffer view.
-                    m_vertexBufferView.BufferLocation = m_vertexBuffer->GetGPUVirtualAddress();
+                    m_vertexBufferView.BufferLocation = m_vertex_buffer->GetGpuVirtualAddress();
                     m_vertexBufferView.StrideInBytes = sizeof(Vertex);
                     m_vertexBufferView.SizeInBytes = vertexBufferSize;
                 }
@@ -293,7 +323,7 @@ namespace ke
             DX12Renderer::~DX12Renderer()
             {
                 WaitForPreviousFrame();
-
+                delete m_vertex_buffer;
                 CloseHandle(m_fenceEvent);
 
             }
