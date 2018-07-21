@@ -44,6 +44,15 @@ namespace ke
                 {
                     return m_swapChain;
                 };
+                
+                ComPtr<ID3D12GraphicsCommandList> CreateGraphicsCommandList();
+
+
+                bool TransitResource(ID3D12Resource* p_resource, D3D12_RESOURCE_STATES, D3D12_RESOURCE_STATES);
+
+                bool FlushCmdQueue(ComPtr<ID3D12GraphicsCommandList> p_list,bool release_cmd_list = true);
+
+                bool WaitForCmdQueue();
 
             private:
                 
@@ -56,11 +65,21 @@ namespace ke
 
                 bool m_enable_debug = false;
 
+                ComPtr<ID3D12Fence> m_fence;
+
+                HANDLE m_fence_event;
+
+                uint64_t m_current_fence_value;
+
                 ComPtr<ID3D12Device> m_device;
 
                 ComPtr<ID3D12CommandQueue> m_commandQueue;
                 
                 ComPtr<IDXGISwapChain3> m_swapChain;
+
+                ComPtr<ID3D12CommandAllocator> m_cmd_allocator;
+
+                __forceinline void BlockToWait();
             };
         }
     }

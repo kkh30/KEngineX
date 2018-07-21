@@ -284,15 +284,8 @@ namespace ke
                     m_vertex_buffer = new VertexBuffer(vertexBufferSize);
                    
                     m_commandList[0]->Reset(m_commandAllocator[0].Get(),nullptr);
-                    D3D12_RESOURCE_BARRIER barrier = {};
-                    barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
-                    barrier.Type = D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
-                    barrier.Transition.pResource = m_vertex_buffer->GetResource();
-                    barrier.Transition.StateBefore = D3D12_RESOURCE_STATE_COPY_DEST;
-                    barrier.Transition.StateAfter = D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER;
-                    barrier.Transition.Subresource = 0;
                     m_commandList[0]->CopyBufferRegion(m_vertex_buffer->GetResource(), 0, m_uploadBuffer.Get(), 0, vertexBufferSize);
-                    m_commandList[0]->ResourceBarrier(1, &barrier);
+                    DX12API::GetAPI().TransitResource(m_vertex_buffer->GetResource(), D3D12_RESOURCE_STATE_COPY_DEST, D3D12_RESOURCE_STATE_VERTEX_AND_CONSTANT_BUFFER);
                     ID3D12CommandList* lists[1] = {m_commandList[0].Get()};
                     m_commandList[0]->Close();
 
@@ -316,9 +309,6 @@ namespace ke
                     m_vertexBufferView.SizeInBytes = vertexBufferSize;
                 }
             }
-
-          
-            
 
             DX12Renderer::~DX12Renderer()
             {

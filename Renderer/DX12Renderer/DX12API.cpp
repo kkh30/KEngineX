@@ -6,7 +6,11 @@ void GetHardwareAdapter(IDXGIFactory2 * pFactory, IDXGIAdapter1 ** ppAdapter);
 
 ke::renderer::dx12renderer::DX12API::DX12API():
     Win32Application(),
-    m_useWarpDevice(false)
+    m_useWarpDevice(false),
+    m_fence(nullptr),
+    m_fence_event(nullptr),
+    m_cmd_allocator(nullptr),
+    m_current_fence_value(1)
 {
     m_enable_debug = true;
     Init(m_enable_debug);
@@ -32,6 +36,53 @@ ke::renderer::dx12renderer::DX12API::~DX12API()
 }
 
 
+ComPtr<ID3D12GraphicsCommandList> ke::renderer::dx12renderer::DX12API::CreateGraphicsCommandList()
+{
+    ComPtr<ID3D12GraphicsCommandList> res;
+    m_device->CreateCommandList(0, D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT, m_cmd_allocator.Get(), nullptr, IID_PPV_ARGS(&res));
+    return res;
+}
+
+bool ke::renderer::dx12renderer::DX12API::FlushCmdQueue(ComPtr<ID3D12GraphicsCommandList> p_list,bool release_cmd_list)
+{
+    p_list->Close();
+    ID3D12CommandList* lists[1] = { p_list.Get() };
+    m_commandQueue->ExecuteCommandLists(1, lists);
+    //if (release_cmd_list && p_list) 
+    //{
+    //    p_list->Release();
+    //}
+    return WaitForCmdQueue();
+
+}
+
+bool ke::renderer::dx12renderer::DX12API::WaitForCmdQueue()
+{
+    m_commandQueue->Signal(m_fence.Get(), m_current_fence_value);
+    if (m_fence->GetCompletedValue() < m_current_fence_value) {
+        //Wait for cmd queue to finish
+        BlockToWait();
+    }
+    m_current_fence_value++;
+    return true;
+}
+
+bool ke::renderer::dx12renderer::DX12API::TransitResource(
+    ID3D12Resource* p_resource,
+    D3D12_RESOURCE_STATES before_state,
+    D3D12_RESOURCE_STATES after_state)
+{
+    D3D12_RESOURCE_BARRIER l_resource_barrier_desc = {};
+    l_resource_barrier_desc.Type = D3D12_RESOURCE_BARRIER_TYPE::D3D12_RESOURCE_BARRIER_TYPE_TRANSITION;
+    l_resource_barrier_desc.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
+    l_resource_barrier_desc.Transition.pResource = p_resource;
+    l_resource_barrier_desc.Transition.StateBefore = before_state;
+    l_resource_barrier_desc.Transition.StateAfter = after_state;
+
+    auto cmd_list = CreateGraphicsCommandList();
+    cmd_list->ResourceBarrier(1, &l_resource_barrier_desc);
+    return FlushCmdQueue(cmd_list.Get());
+}
 
 
 
@@ -105,8 +156,20 @@ void ke::renderer::dx12renderer::DX12API::Init(bool enable_validation)
 
     // This sample does not support fullscreen transitions.
     factory->MakeWindowAssociation(m_hwnd, DXGI_MWA_NO_ALT_ENTER);
-
     swapChain.As(&m_swapChain);
+    m_device->CreateCommandAllocator(
+        D3D12_COMMAND_LIST_TYPE::D3D12_COMMAND_LIST_TYPE_DIRECT,
+        IID_PPV_ARGS(&m_cmd_allocator)
+    );
+    m_cmd_allocator->Reset();
+    m_device->CreateFence(0, D3D12_FENCE_FLAG_NONE, IID_PPV_ARGS(&m_fence));
+
+}
+
+void ke::renderer::dx12renderer::DX12API::BlockToWait()
+{
+    m_fence->SetEventOnCompletion(m_current_fence_value, m_fence_event);
+    WaitForSingleObjectEx(m_fence_event, INFINITY,false);
 }
 
 void GetHardwareAdapter(IDXGIFactory2 * pFactory, IDXGIAdapter1 ** ppAdapter)
